@@ -1,0 +1,30 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+@inject PdfProcessingService pdfProcessingService
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hola Palomita! te quiero muuuucho!</h1>
+
+<button class="btn btn-primary"  @onclick="ProcessPdfFiles">Process PDF Files</button>
+
+@if(processedCount.HasValue)
+{
+    <p>Number of PDF files successfully processed: @processedCount</p>
+}
+
+@code {
+    private int? processedCount = null;
+
+    private async Task ProcessPdfFiles()
+    {
+        Console.WriteLine("Processing PDF files..."); // Check if this gets printed
+        processedCount = await pdfProcessingService.ProcessFilesAsync();
+        StateHasChanged(); // Ensure this is called
+    }
+
+}
+
+
+

@@ -1,0 +1,22 @@
+﻿@page "/counter"
+@rendermode InteractiveServer
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @processedCount</p>
+
+<button class="btn btn-primary" @onclick="ProcessPdfFiles">Click me</button>
+
+
+@code {
+    private int? processedCount = null;
+
+    private async Task ProcessPdfFiles() {
+        Console.WriteLine("Button clicked.");
+        processedCount = 42; // Set a static value for testing
+        StateHasChanged();
+    }
+}
+
