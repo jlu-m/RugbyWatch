@@ -8,14 +8,14 @@ namespace RugbyWatch.Data {
 
         [ForeignKey("Match")]
         public int MatchId { get; set; }
-        public Match Match { get; set; }
+        public Match? Match { get; set; }
 
         [ForeignKey("Player")]
         public int PlayerId { get; set; }
-        public Player Player { get; set; }
+        public Player? Player { get; set; }
 
         [ForeignKey("Team")]
         public int TeamId { get; set; }
-        public Team Team { get; set; }
+        public Team? Team { get; set; }
     }
 }

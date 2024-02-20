@@ -11,19 +11,19 @@
 
 <button class="btn btn-primary"  @onclick="StartProcess">Process PDF Files</button>
 
-@if(processedCount.HasValue)
+@if(_processedCount.HasValue)
 {
-    <p>Number of PDF files successfully processed: @processedCount</p>
+    <p>Number of PDF files successfully processed: @_processedCount</p>
 }
 
 @code {
-    private int? processedCount = null;
+    private int? _processedCount = null;
 
     private async Task StartProcess() {
         Console.WriteLine("Donwloading regional match reports..."); 
         await downloadMatchReportService.DownloadPdfsAsync();
         Console.WriteLine("Processing regional match reports..."); 
-        processedCount = await processMatchReportService.ProcessFilesAsync();
+        _processedCount = processMatchReportService.ProcessMatchReports();
         StateHasChanged(); 
     }
 

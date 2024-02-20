@@ -18,8 +18,8 @@ namespace RugbyWatch.Services {
 
 public async Task DownloadPdfsAsync()
 {
-    var tracker = await _context.LastDownloadedMatchReports.FirstOrDefaultAsync() ?? new LastDownloadedMatchReport() { regionalMatchReportId = 0 };
-    int currentId = tracker.regionalMatchReportId + 1;
+    var tracker = await _context.LastDownloadedMatchReports!.FirstOrDefaultAsync() ?? new LastDownloadedMatchReport() { RegionalMatchReportId = 0 };
+    int currentId = tracker.RegionalMatchReportId + 1;
     int consecutiveErrors = 0; // Counter for consecutive errors
 
     while (true) // Infinite loop, break condition inside
@@ -35,7 +35,7 @@ public async Task DownloadPdfsAsync()
                 consecutiveErrors++; // Increment error counter
                 if (consecutiveErrors >= 5) // Check if 5 consecutive errors occurred
                 {
-                    tracker.regionalMatchReportId= currentId - 1; 
+                    tracker.RegionalMatchReportId= currentId - 1; 
                     await _context.SaveChangesAsync();
                     break; // Exit the loop after 5 consecutive errors
                 }
@@ -51,7 +51,7 @@ public async Task DownloadPdfsAsync()
                 await SavePdfAsync(ms, $"{currentId}.pdf"); // Ensure SavePdf is awaited
             }
 
-            tracker.regionalMatchReportId = currentId; // Update tracker with the successfully processed ID
+            tracker.RegionalMatchReportId = currentId; // Update tracker with the successfully processed ID
             currentId++; // Prepare next ID
         }
         catch
@@ -59,7 +59,7 @@ public async Task DownloadPdfsAsync()
             consecutiveErrors++; // Increment error counter on exception
             if (consecutiveErrors >= 5)
             {
-                tracker.regionalMatchReportId = currentId - 1;
+                tracker.RegionalMatchReportId = currentId - 1;
                 await _context.SaveChangesAsync();
                 break; // Stop processing after 5 consecutive errors
             }
@@ -73,7 +73,7 @@ public async Task DownloadPdfsAsync()
     {
         var directoryPath = _configuration.GetValue<string>("PdfFilesDirectory");
 
-        var filePath = Path.Combine(directoryPath, fileName);
+        var filePath = Path.Combine(directoryPath!, fileName);
 
         using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
         {
@@ -82,7 +82,7 @@ public async Task DownloadPdfsAsync()
                 pdfStream.Position = 0;
             }
 
-            pdfStream.CopyToAsync(fileStream);
+            await pdfStream.CopyToAsync(fileStream);
         }
     }
 

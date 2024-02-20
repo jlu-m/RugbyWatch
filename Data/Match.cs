@@ -5,32 +5,32 @@ namespace RugbyWatch.Data {
     public class Match {
         [Key]
         public int Id { get; set; }
-        public string Day { get; set; }
-        public string Time { get; set; }
+        public required string Day { get; set; }
+        public required string Time { get; set; }
         
         [NotMapped]
-        public string LeagueName { get; set; }
+        public required string LeagueName { get; set; }
 
         [ForeignKey("LeagueId")]
         public int LeagueId { get; set; }
-        public League League { get; set; }
-        public string GameRound { get; set; }
-        public string Field { get; set; }
+        public League? League { get; set; }
+        public required string GameRound { get; set; }
+        public required string Field { get; set; }
 
         [NotMapped]
 
-        public string LocalTeamName { get; set; }
+        public required string LocalTeamName { get; set; }
 
         [ForeignKey("LocalTeamId")]
         public int LocalTeamId { get; set; }
-        public Team LocalTeam { get; set; }
+        public Team? LocalTeam { get; set; }
 
 
         [NotMapped]
-        public string VisitorTeamName { get; set; }
+        public required string VisitorTeamName { get; set; }
 
         [ForeignKey("VisitorTeamId")]
         public int VisitorTeamId { get; set; }
-        public Team VisitorTeam { get; set; }
+        public Team? VisitorTeam { get; set; }
     }
 }

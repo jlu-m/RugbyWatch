@@ -22,15 +22,18 @@ namespace RugbyWatch.Helpers {
         {
             string cleanedString = sectionText.Replace("\r", "").Replace("\n", "");
             string[] sections = cleanedString.Split(MatchSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
-            Match match = new Match();
+            Match match = new Match()
+            {
+                LeagueName = sections[1],
+                GameRound = sections[2],
+                Day = sections[3],
+                Time = sections[4],
+                Field = sections [5],
+                LocalTeamName = sections [6],
+                VisitorTeamName = sections [7]
+            };
 
-            match.LeagueName = sections[1];
-            match.GameRound = sections[2];
-            match.Day = sections[3];
-            match.Time = sections[4];
-            match.Field = sections [5];
-            match.LocalTeamName = sections [6];
-            match.VisitorTeamName = sections [7];
+
 
             return match;
         }

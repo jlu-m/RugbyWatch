@@ -6,10 +6,10 @@ namespace RugbyWatch.Data {
 
         [Key]
         public int Id { get; set; }
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [ForeignKey("ClubId")]
         public int? ClubId { get; set; }
-        public Club Club { get; set; }
+        public Club? Club { get; set; }
     }
 }
