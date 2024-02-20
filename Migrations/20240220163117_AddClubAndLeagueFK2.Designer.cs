@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RugbyWatch.Data;
 
@@ -11,9 +12,11 @@ using RugbyWatch.Data;
 namespace RugbyWatch.Migrations
 {
     [DbContext(typeof(RugbyMatchDbContext))]
-    partial class RugbyMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240220163117_AddClubAndLeagueFK2")]
+    partial class AddClubAndLeagueFK2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

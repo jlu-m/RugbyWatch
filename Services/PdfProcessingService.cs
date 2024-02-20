@@ -3,6 +3,7 @@ using System.Text;
 using Docnet.Core;
 using Docnet.Core.Models;
 using RugbyWatch.Helpers;
+using System.Numerics;
 
 
 public class PdfProcessingService {
@@ -49,7 +50,9 @@ public class PdfProcessingService {
         return parser.ParseMinute(extractedText.ToString());
     }
 
-    private void SaveMinuteToDatabase( Minute data ) {
+    private void SaveMinuteToDatabase( Minute data )
+    {
+        data.Match.LeagueId = GetOrCreateLeague(data.Match.LeagueName).Id;
         data.Match.LocalTeamId = GetOrCreateTeam(data.Match.LocalTeamName).Id;
         data.Match.VisitorTeamId = GetOrCreateTeam(data.Match.VisitorTeamName).Id;
         var existingMatch = _dbContext.Matches.FirstOrDefault(m =>
@@ -68,7 +71,6 @@ public class PdfProcessingService {
     }
 
 
-
     private Team GetOrCreateTeam( string teamName ) {
         var existingTeam = _dbContext.Teams.FirstOrDefault(t => t.Name == teamName);
         if ( existingTeam == null ) {
@@ -83,12 +85,21 @@ public class PdfProcessingService {
         }
     }
 
+    private League GetOrCreateLeague( string leagueName ) {
+        var existingLeague = _dbContext.Leagues.FirstOrDefault(l => l.Name == leagueName);
+        if ( existingLeague == null ) {
+            var newLeague = new League { Name = leagueName };
+            _dbContext.Leagues.Add(newLeague);
+            _dbContext.SaveChanges();
+            return newLeague;
+        }
 
+        return existingLeague;
+    }
 
-    private Player InsertPlayer( Player player ) {
+    private Player GetOrCreatePlayer( Player player ) {
 
-        var existingPlayer = _dbContext.Players.FirstOrDefault(m =>
-            m.FullName == player.FullName);
+        var existingPlayer = _dbContext.Players.FirstOrDefault(m => m.FullName == player.FullName);
         if ( existingPlayer == null ) {
             _dbContext.Players.Add(player);
             _dbContext.SaveChanges();
@@ -101,7 +112,7 @@ public class PdfProcessingService {
     private async void InsertLineUp( Minute data ) {
         foreach ( var player in data.LocalPlayers ) {
             Console.WriteLine($"Preparing to insert player {player.FullName}");
-            var playerEntity = InsertPlayer(player);
+            var playerEntity = GetOrCreatePlayer(player);
             var playerId = playerEntity.Id;
 
             Console.WriteLine($"Verifying if lineup exists");
@@ -123,7 +134,7 @@ public class PdfProcessingService {
         }
 
         foreach ( var player in data.VisitorPlayers ) {
-            var playerEntity = InsertPlayer(player);
+            var playerEntity = GetOrCreatePlayer(player);
             var playerId = playerEntity.Id;
 
             var existingLineup = _dbContext.Lineups

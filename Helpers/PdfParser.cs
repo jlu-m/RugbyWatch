@@ -24,7 +24,7 @@ namespace RugbyWatch.Helpers {
             string[] sections = cleanedString.Split(MatchSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
             Match match = new Match();
 
-            match.Category = sections[1];
+            match.LeagueName = sections[1];
             match.GameRound = sections[2];
             match.Day = sections[3];
             match.Time = sections[4];

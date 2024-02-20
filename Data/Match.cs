@@ -7,7 +7,13 @@ namespace RugbyWatch.Data {
         public int Id { get; set; }
         public string Day { get; set; }
         public string Time { get; set; }
-        public string Category { get; set; }
+        
+        [NotMapped]
+        public string LeagueName { get; set; }
+
+        [ForeignKey("LeagueId")]
+        public int LeagueId { get; set; }
+        public League League { get; set; }
         public string GameRound { get; set; }
         public string Field { get; set; }
 
