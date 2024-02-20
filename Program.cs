@@ -1,13 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using RugbyWatch.Components;
 using RugbyWatch.Data;
+using RugbyWatch.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddScoped<PdfProcessingService>();
+builder.Services.AddHttpClient();
+
+builder.Services.AddScoped<ProcessMatchReportService>();
+builder.Services.AddScoped<DownloadMatchReportService>();
+
 builder.Services.AddDbContext<RugbyMatchDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RugbyWatchDb")));
 

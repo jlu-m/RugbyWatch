@@ -16,6 +16,8 @@ namespace RugbyWatch.Data
         public DbSet<League> Leagues { get; set; }
         public DbSet<Club> Clubs { get; set; }
 
+        public DbSet<LastDownloadedMatchReport> LastDownloadedMatchReports { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,13 +1,15 @@
 ﻿@page "/"
+@using RugbyWatch.Services
 @rendermode InteractiveServer
 
-@inject PdfProcessingService pdfProcessingService
+@inject ProcessMatchReportService processMatchReportService
+@inject DownloadMatchReportService downloadMatchReportService
 
 <PageTitle>Home</PageTitle>
 
 <h1>Hola Palomita! te quiero muuuucho!</h1>
 
-<button class="btn btn-primary"  @onclick="ProcessPdfFiles">Process PDF Files</button>
+<button class="btn btn-primary"  @onclick="StartProcess">Process PDF Files</button>
 
 @if(processedCount.HasValue)
 {
@@ -17,11 +19,12 @@
 @code {
     private int? processedCount = null;
 
-    private async Task ProcessPdfFiles()
-    {
-        Console.WriteLine("Processing PDF files..."); // Check if this gets printed
-        processedCount = await pdfProcessingService.ProcessFilesAsync();
-        StateHasChanged(); // Ensure this is called
+    private async Task StartProcess() {
+        Console.WriteLine("Donwloading regional match reports..."); 
+        await downloadMatchReportService.DownloadPdfsAsync();
+        Console.WriteLine("Processing regional match reports..."); 
+        processedCount = await processMatchReportService.ProcessFilesAsync();
+        StateHasChanged(); 
     }
 
 }

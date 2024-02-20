@@ -1,5 +1,5 @@
 ﻿namespace RugbyWatch.Data {
-    public class Minute {
+    public class MatchReport {
 
         public Match? Match { get; set; }
         public List<Player>? LocalPlayers { get; set; }

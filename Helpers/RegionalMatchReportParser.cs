@@ -3,19 +3,19 @@ using RugbyWatch.Data;
 using Match = RugbyWatch.Data.Match;
 
 namespace RugbyWatch.Helpers {
-    public class PdfParser
+    public class RegionalMatchReportParser
     {
-        private readonly string[] MinuteSectionSeparators =
+        private readonly string[] MatchReportSectionSeparators =
             new string[] { "Alineaciones", "Resultado del partido", "Cambios" };
         private readonly string[] MatchSectionSeparators = new string[] { "Celebrado en:", "Categoría:", "Jornada:", "El día:", "A la hora:", "En el campo:", "Equipo local:", "Equipo visitante:", "FEDERACIÓN DE RUGBY DE MADRID" };
-        public Minute ParseMinute(string extractedText)
+        public MatchReport ParseMatchReport(string extractedText)
         {
-            var minute = new Minute();
-            string[] sections = extractedText.Split(MinuteSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
-            minute.Match =  ParseMatchSection(sections[0]);
-            minute.LocalPlayers = ParsePlayers(sections[1])[0];
-            minute.VisitorPlayers = ParsePlayers(sections[1])[1];
-             return minute;
+            var matchReport = new MatchReport();
+            string[] sections = extractedText.Split(MatchReportSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
+            matchReport.Match =  ParseMatchSection(sections[0]);
+            matchReport.LocalPlayers = ParsePlayers(sections[1])[0];
+            matchReport.VisitorPlayers = ParsePlayers(sections[1])[1];
+             return matchReport;
         }
 
         private Match ParseMatchSection(string sectionText)
@@ -56,7 +56,10 @@ namespace RugbyWatch.Helpers {
                 }
                 if (IsEndOfPlayers((playerRow)))
                     break;
-                string cleanPlayerName = playerRow.Substring(0, playerRow.Length - 8);
+                Console.WriteLine($"{playerRow}");
+                string cleanPlayerName = "";
+                if(playerRow.Length > 8)
+                    cleanPlayerName = playerRow.Substring(0, playerRow.Length - 8);
                 cleanPlayerName = Regex.Replace(cleanPlayerName, @"\d", "");
                 if (cleanPlayerName.StartsWith(" X "))
                     cleanPlayerName = cleanPlayerName.Substring(2);

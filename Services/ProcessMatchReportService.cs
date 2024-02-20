@@ -4,15 +4,20 @@ using Docnet.Core;
 using Docnet.Core.Models;
 using RugbyWatch.Helpers;
 using System.Numerics;
+using RugbyWatch.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 
-public class PdfProcessingService {
+public class ProcessMatchReportService {
     private readonly RugbyMatchDbContext _dbContext;
     private readonly string _pdfDirectoryPath;
+    private readonly string _archiveDirectoryPath;
 
-    public PdfProcessingService( RugbyMatchDbContext dbContext, IConfiguration configuration ) {
+    public ProcessMatchReportService( RugbyMatchDbContext dbContext, IConfiguration configuration ) {
         _dbContext = dbContext;
         _pdfDirectoryPath = configuration.GetValue<string>("PdfFilesDirectory");
+        _archiveDirectoryPath = configuration.GetValue<string>("PdfArchiveDirectory");
     }
 
     public async Task<int> ProcessFilesAsync() {
@@ -21,13 +26,13 @@ public class PdfProcessingService {
 
         foreach ( var file in pdfFiles ) {
             try {
-                using ( var transaction = await _dbContext.Database.BeginTransactionAsync() ) {
-                    var extractedData = ExtractMinuteFromFile(file);
-                    SaveMinuteToDatabase(extractedData);
-                    processedFilesCount++;
+                var extractedData = ExtractMatchReportFromFile(file);
+                SaveMatchReportToDatabase(extractedData);
+                processedFilesCount++;
+                var fileName = Path.GetFileName(file);
+                var archiveFilePath = Path.Combine(_archiveDirectoryPath, fileName);
+                File.Move(file, archiveFilePath, true);
 
-                    await transaction.CommitAsync();
-                }
             }
             catch ( Exception ex ) {
                 Console.WriteLine($"Error processing file {file}: {ex.Message}");
@@ -36,7 +41,7 @@ public class PdfProcessingService {
         return processedFilesCount;
     }
 
-    private Minute ExtractMinuteFromFile( string filePath ) {
+    private MatchReport ExtractMatchReportFromFile( string filePath ) {
         if ( !File.Exists(filePath) )
             throw new FileNotFoundException("The PDF file does not exist.", filePath);
 
@@ -46,12 +51,11 @@ public class PdfProcessingService {
             for ( int pageIndex = 0; pageIndex < pageCount; pageIndex++ )
                 extractedText.AppendLine(docReader.GetPageReader(pageIndex).GetText());
         }
-        var parser = new PdfParser();
-        return parser.ParseMinute(extractedText.ToString());
+        var parser = new RegionalMatchReportParser();
+        return parser.ParseMatchReport(extractedText.ToString());
     }
 
-    private void SaveMinuteToDatabase( Minute data )
-    {
+    private void SaveMatchReportToDatabase( MatchReport data ) {
         data.Match.LeagueId = GetOrCreateLeague(data.Match.LeagueName).Id;
         data.Match.LocalTeamId = GetOrCreateTeam(data.Match.LocalTeamName).Id;
         data.Match.VisitorTeamId = GetOrCreateTeam(data.Match.VisitorTeamName).Id;
@@ -109,7 +113,7 @@ public class PdfProcessingService {
         return existingPlayer;
     }
 
-    private async void InsertLineUp( Minute data ) {
+    private void InsertLineUp( MatchReport data ) {
         foreach ( var player in data.LocalPlayers ) {
             Console.WriteLine($"Preparing to insert player {player.FullName}");
             var playerEntity = GetOrCreatePlayer(player);

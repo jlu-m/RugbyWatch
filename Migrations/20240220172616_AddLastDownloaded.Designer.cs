@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RugbyWatch.Data;
 
@@ -11,9 +12,11 @@ using RugbyWatch.Data;
 namespace RugbyWatch.Migrations
 {
     [DbContext(typeof(RugbyMatchDbContext))]
-    partial class RugbyMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240220172616_AddLastDownloaded")]
+    partial class AddLastDownloaded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,7 +42,7 @@ namespace RugbyWatch.Migrations
                     b.ToTable("Clubs");
                 });
 
-            modelBuilder.Entity("RugbyWatch.Data.LastDownloadedMatchReport", b =>
+            modelBuilder.Entity("RugbyWatch.Data.LastDownloadedMinute", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -47,12 +50,12 @@ namespace RugbyWatch.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("regionalMatchReportId")
+                    b.Property<int>("regionalMinuteId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("LastDownloadedMatchReports");
+                    b.ToTable("LastDownloadedMinutes");
                 });
 
             modelBuilder.Entity("RugbyWatch.Data.League", b =>
