@@ -11,8 +11,8 @@ using RugbyWatch.Data;
 namespace RugbyWatch.Migrations
 {
     [DbContext(typeof(RugbyMatchDbContext))]
-    [Migration("20240219211515_DeleteLicenseColumn")]
-    partial class DeleteLicenseColumn
+    [Migration("20240219225438_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,19 +48,21 @@ namespace RugbyWatch.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TeamLocal")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TeamVisitor")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("LocalTeamId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Time")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("VisitorTeamId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("LocalTeamId");
+
+                    b.HasIndex("VisitorTeamId");
 
                     b.ToTable("Matches");
                 });
@@ -80,6 +82,42 @@ namespace RugbyWatch.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Players");
+                });
+
+            modelBuilder.Entity("RugbyWatch.Data.Team", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Team");
+                });
+
+            modelBuilder.Entity("RugbyWatch.Data.Match", b =>
+                {
+                    b.HasOne("RugbyWatch.Data.Team", "LocalTeam")
+                        .WithMany()
+                        .HasForeignKey("LocalTeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RugbyWatch.Data.Team", "VisitorTeam")
+                        .WithMany()
+                        .HasForeignKey("VisitorTeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("LocalTeam");
+
+                    b.Navigation("VisitorTeam");
                 });
 #pragma warning restore 612, 618
         }

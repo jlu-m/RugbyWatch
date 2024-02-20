@@ -14,6 +14,8 @@ namespace RugbyWatch.Data {
         public int PlayerId { get; set; }
         public Player Player { get; set; }
 
-        public bool Local { get; set; }
+        [ForeignKey("Team")]
+        public int TeamId { get; set; }
+        public Team Team { get; set; }
     }
 }

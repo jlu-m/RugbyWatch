@@ -29,8 +29,8 @@ public class PdfProcessingService
         {
             try
             {
-                var extractedData = ExtractDataFromFile(file);
-                await SaveDataToDatabase(extractedData);
+                var extractedData = ExtractMinuteFromFile(file);
+                await SaveMinuteToDatabase(extractedData);
                 processedFilesCount++;
             }
             catch (Exception ex)
@@ -42,7 +42,7 @@ public class PdfProcessingService
         return processedFilesCount;
     }
 
-    private Minute ExtractDataFromFile(string filePath)
+    private Minute ExtractMinuteFromFile(string filePath)
     {
         if (!File.Exists(filePath))
             throw new FileNotFoundException("The PDF file does not exist.", filePath);
@@ -59,25 +59,40 @@ public class PdfProcessingService
     }
 
 
-    [SuppressMessage("ReSharper.DPA", "DPA0006: Large number of DB commands", MessageId = "count: 81")]
-    private async Task SaveDataToDatabase(Minute data)
+    private async Task SaveMinuteToDatabase(Minute data)
+    {
+        InsertTeams(data.Match.LocalTeamName);
+        InsertTeams(data.Match.VisitorTeamName);
+        InsertMatch(data.Match);
+        InsertPlayers(data.LocalPlayers);
+        InsertPlayers(data.VisitorPlayers);
+        InsertLineUp(data.LocalPlayers);
+        InsertLineUp(data.VisitorPlayers);
+    }
+
+    private async void InsertTeams(string team)
+    {
+
+    }
+
+    private async void InsertMatch(Match match)
     {
         var existingMatch = _dbContext.Matches.FirstOrDefault(m =>
-            m.GameRound == data.Match.GameRound &&
-            m.TeamLocal == data.Match.TeamLocal &&
-            m.TeamVisitor == data.Match.TeamVisitor);
+            m.GameRound == match.GameRound &&
+            m.LocalTeamName == match.LocalTeamName &&
+            m.VisitorTeamName == match.VisitorTeamName);
         if (existingMatch == null)
         {
-            _dbContext.Matches.Add(data.Match);
+            _dbContext.Matches.Add(match);
             _dbContext.SaveChanges();
         }
         else
             Console.WriteLine("This match already exists in the database.");
+    }
 
-        var totalPlayers = new List<Player>();
-        totalPlayers.AddRange(data.LocalPlayers);
-        totalPlayers.AddRange(data.VisitorPlayers);
-        foreach (var player in totalPlayers)
+    private async void InsertPlayers(List<Player> players)
+    {
+        foreach (var player in players)
         {
             var existingPlayer = _dbContext.Players.FirstOrDefault(m =>
                 m.FullName == player.FullName);
@@ -89,6 +104,10 @@ public class PdfProcessingService
             else
                 Console.WriteLine("This player already exists in the database.");
         }
+    }
+
+    private async void InsertLineUp(List<Player> players)
+    {
 
     }
 }

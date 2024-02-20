@@ -29,8 +29,8 @@ namespace RugbyWatch.Helpers {
             match.Day = sections[3];
             match.Time = sections[4];
             match.Field = sections [5];
-            match.TeamLocal = sections [6];
-            match.TeamVisitor = sections [7];
+            match.LocalTeamName = sections [6];
+            match.VisitorTeamName = sections [7];
 
             return match;
         }
