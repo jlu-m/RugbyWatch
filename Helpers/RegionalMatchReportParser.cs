@@ -24,13 +24,13 @@ namespace RugbyWatch.Helpers {
             string[] sections = cleanedString.Split(MatchSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
             Match match = new Match()
             {
-                LeagueName = sections[1],
-                GameRound = sections[2],
-                Day = sections[3],
-                Time = sections[4],
-                Field = sections [5],
-                LocalTeamName = sections [6],
-                VisitorTeamName = sections [7]
+                LeagueName = sections[1].Trim(),
+                GameRound = sections[2].Trim(),
+                Day = sections [ 3 ].Trim(),
+                Time = sections [ 4 ].Trim(),
+                Field = sections [ 5 ].Trim(),
+                LocalTeamName = sections [ 6 ].Trim(),
+                VisitorTeamName = sections [ 7 ].Trim()
             };
 
 
@@ -69,9 +69,9 @@ namespace RugbyWatch.Helpers {
                 if (cleanPlayerName.StartsWith(" C/X "))
                     cleanPlayerName = cleanPlayerName.Substring(4);
                 if(isLocal)
-                    localPlayers.Add(new Player(){FullName = cleanPlayerName});
+                    localPlayers.Add(new Player(){FullName = cleanPlayerName.Trim()});
                 else
-                    visitorPlayers.Add(new Player(){FullName = cleanPlayerName});
+                    visitorPlayers.Add(new Player(){FullName = cleanPlayerName.Trim() });
             }
             totalPlayers.Add(localPlayers);
             totalPlayers.Add(visitorPlayers);

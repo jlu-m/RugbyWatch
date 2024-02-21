@@ -7,13 +7,13 @@
 
 <p role="status">Current count: @_processedCount</p>
 
-<button class="btn btn-primary" @onclick="ProcessPdfFiles">Click me</button>
+<button class="btn btn-primary" @onclick="Test">Click me</button>
 
 
 @code {
     private int? _processedCount = null;
 
-    private void ProcessPdfFiles() {
+    private void Test() {
         Console.WriteLine("Button clicked.");
         _processedCount = 42; // Set a static value for testing
         StateHasChanged();

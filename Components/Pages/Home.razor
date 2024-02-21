@@ -2,8 +2,7 @@
 @using RugbyWatch.Services
 @rendermode InteractiveServer
 
-@inject ProcessMatchReportService processMatchReportService
-@inject DownloadMatchReportService downloadMatchReportService
+@inject ProcessMatchReportsService ProcessMatchReportsService
 
 <PageTitle>Home</PageTitle>
 
@@ -13,17 +12,15 @@
 
 @if(_processedCount.HasValue)
 {
-    <p>Number of PDF files successfully processed: @_processedCount</p>
+    <p>Number of Match Reports successfully processed: @_processedCount</p>
 }
 
 @code {
     private int? _processedCount = null;
 
     private async Task StartProcess() {
-        Console.WriteLine("Donwloading regional match reports..."); 
-        await downloadMatchReportService.DownloadPdfsAsync();
         Console.WriteLine("Processing regional match reports..."); 
-        _processedCount = processMatchReportService.ProcessMatchReports();
+        _processedCount = await ProcessMatchReportsService.Execute();
         StateHasChanged(); 
     }
 

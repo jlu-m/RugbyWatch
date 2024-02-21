@@ -6,33 +6,38 @@ using RugbyWatch.Helpers;
 
 namespace RugbyWatch.Services;
 
-public class ProcessMatchReportService {
-    private readonly RugbyMatchDbContext _dbContext;
-    private readonly string? _pdfDirectoryPath;
-    private readonly string? _archiveDirectoryPath;
+public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfiguration configuration)
+{
+    private readonly string? _regionalMatchReportDirectoryPath = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportDirectory");
+    private readonly string? _regionalMatchReportArchiveDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportArchiveDirectory");
+    private readonly string? _regionalMatchReportErrorDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportErrorDirectory");
+    private readonly string? _regionalMatchReportFilterDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportFilterDirectory");
 
-    public ProcessMatchReportService( RugbyMatchDbContext dbContext, IConfiguration configuration, string pdfDirectoryPath, string archiveDirectoryPath) {
-        _dbContext = dbContext;
-        _pdfDirectoryPath = configuration.GetValue<string>("PdfFilesDirectory");
-        _archiveDirectoryPath = configuration.GetValue<string>("PdfArchiveDirectory");
-    }
-
-    public int ProcessMatchReports() {
+    public int Execute() {
         int processedFilesCount = 0;
-        var pdfFiles = Directory.EnumerateFiles(_pdfDirectoryPath!, "*.pdf");
+        var regionalMatchReports = Directory.EnumerateFiles(_regionalMatchReportDirectoryPath!, "*.pdf");
 
-        foreach ( var file in pdfFiles ) {
+        foreach ( var regionalMatchReport in regionalMatchReports ) {
             try {
-                var extractedData = ExtractMatchReportFromFile(file);
-                SaveMatchReportToDatabase(extractedData);
-                processedFilesCount++;
-                var fileName = Path.GetFileName(file);
-                var archiveFilePath = Path.Combine(_archiveDirectoryPath!, fileName);
-                File.Move(file, archiveFilePath, true);
+                var formattedMatchReport = ExtractMatchReportFromFile(regionalMatchReport);
+                var fileName = Path.GetFileName(regionalMatchReport);
 
+                if (!isMensRegionalLeague(formattedMatchReport))
+                {
+                    var regionalMatchReportFilter = Path.Combine(_regionalMatchReportFilterDirectory!, fileName);
+                    File.Move(regionalMatchReport, regionalMatchReportFilter, true);
+                    continue;
+                }
+                SaveMatchReportToDatabase(formattedMatchReport);
+                processedFilesCount++;
+                var regionalMatchReportArchive = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
+                File.Move(regionalMatchReport, regionalMatchReportArchive, true);
             }
             catch ( Exception ex ) {
-                Console.WriteLine($"Error processing file {file}: {ex.Message}");
+                Console.WriteLine($"Error processing file {regionalMatchReport}: {ex.Message}");
+                var fileName = Path.GetFileName(regionalMatchReport);
+                var regionalMatchReportError = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
+                File.Move(regionalMatchReport, regionalMatchReportError, true);
             }
         }
         return processedFilesCount;
@@ -52,17 +57,24 @@ public class ProcessMatchReportService {
         return parser.ParseMatchReport(extractedText.ToString());
     }
 
+    private bool isMensRegionalLeague(MatchReport matchReport)
+    {
+        if(matchReport.Match.LeagueName.StartsWith(" 3ª") || (matchReport.Match.LeagueName.StartsWith(" 2ª")) || (matchReport.Match.LeagueName.StartsWith(" 1ª")))
+            return true;
+        return false;
+    }
+
     private void SaveMatchReportToDatabase( MatchReport data ) {
         data.Match!.LeagueId = GetOrCreateLeague(data.Match.LeagueName).Id;
         data.Match.LocalTeamId = GetOrCreateTeam(data.Match.LocalTeamName).Id;
         data.Match.VisitorTeamId = GetOrCreateTeam(data.Match.VisitorTeamName).Id;
-        var existingMatch = _dbContext.Matches!.FirstOrDefault(m =>
+        var existingMatch = dbContext.Matches!.FirstOrDefault(m =>
             m.GameRound == data.Match.GameRound &&
             m.LocalTeamId == data.Match.LocalTeamId &&
             m.VisitorTeamId == data.Match.VisitorTeamId);
         if ( existingMatch == null ) {
-            _dbContext.Matches!.Add(data.Match);
-            _dbContext.SaveChanges();
+            dbContext.Matches!.Add(data.Match);
+            dbContext.SaveChanges();
         }
         else {
             data.Match = existingMatch;
@@ -73,11 +85,11 @@ public class ProcessMatchReportService {
 
 
     private Team GetOrCreateTeam( string teamName ) {
-        var existingTeam = _dbContext.Teams!.FirstOrDefault(t => t.Name == teamName);
+        var existingTeam = dbContext.Teams!.FirstOrDefault(t => t.Name == teamName);
         if ( existingTeam == null ) {
             var newTeam = new Team { Name = teamName };
-            _dbContext.Teams!.Add(newTeam);
-            _dbContext.SaveChanges();
+            dbContext.Teams!.Add(newTeam);
+            dbContext.SaveChanges();
             return newTeam;
         }
         else {
@@ -87,11 +99,11 @@ public class ProcessMatchReportService {
     }
 
     private League GetOrCreateLeague( string leagueName ) {
-        var existingLeague = _dbContext.Leagues!.FirstOrDefault(l => l.Name == leagueName);
+        var existingLeague = dbContext.Leagues!.FirstOrDefault(l => l.Name == leagueName);
         if ( existingLeague == null ) {
             var newLeague = new League { Name = leagueName };
-            _dbContext.Leagues!.Add(newLeague);
-            _dbContext.SaveChanges();
+            dbContext.Leagues!.Add(newLeague);
+            dbContext.SaveChanges();
             return newLeague;
         }
 
@@ -100,10 +112,10 @@ public class ProcessMatchReportService {
 
     private Player GetOrCreatePlayer( Player player ) {
 
-        var existingPlayer = _dbContext.Players!.FirstOrDefault(m => m.FullName == player.FullName);
+        var existingPlayer = dbContext.Players!.FirstOrDefault(m => m.FullName == player.FullName);
         if ( existingPlayer == null ) {
-            _dbContext.Players!.Add(player);
-            _dbContext.SaveChanges();
+            dbContext.Players!.Add(player);
+            dbContext.SaveChanges();
             return player;
         }
 
@@ -124,7 +136,7 @@ public class ProcessMatchReportService {
             var playerEntity = GetOrCreatePlayer(player);
             var playerId = playerEntity.Id;
 
-            bool existingLineup = _dbContext.Lineups!.Any(l => 
+            bool existingLineup = dbContext.Lineups!.Any(l => 
                 data.Match != null && 
                 l.MatchId == data.Match.Id && 
                 l.PlayerId == playerId && 
@@ -139,9 +151,9 @@ public class ProcessMatchReportService {
                     TeamId = teamId
                 };
 
-                _dbContext.Lineups!.Add(lineup);
+                dbContext.Lineups!.Add(lineup);
             }
         }
-        _dbContext.SaveChanges();
+        dbContext.SaveChanges();
     }
 }

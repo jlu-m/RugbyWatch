@@ -10,8 +10,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient();
 
-builder.Services.AddScoped<ProcessMatchReportService>();
+builder.Services.AddScoped<StoreMatchReportService>();
 builder.Services.AddScoped<DownloadMatchReportService>();
+builder.Services.AddScoped<ProcessMatchReportsService>();
 
 builder.Services.AddDbContext<RugbyMatchDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RugbyWatchDb")));
