@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<StoreMatchReportService>();
+builder.Services.AddScoped<LineupComplianceCheckService>();
 builder.Services.AddScoped<DownloadMatchReportService>();
 builder.Services.AddScoped<ProcessMatchReportsService>();
 

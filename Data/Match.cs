@@ -5,9 +5,9 @@ namespace RugbyWatch.Data {
     public class Match {
         [Key]
         public int Id { get; set; }
-        public required string Day { get; set; }
+        public required DateTime Day { get; set; }
         public required string Time { get; set; }
-        
+
         [NotMapped]
         public required string LeagueName { get; set; }
 
@@ -32,5 +32,6 @@ namespace RugbyWatch.Data {
         [ForeignKey("VisitorTeamId")]
         public int VisitorTeamId { get; set; }
         public Team? VisitorTeam { get; set; }
+
     }
 }

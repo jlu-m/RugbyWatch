@@ -1,4 +1,7 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.SqlServer.Server;
 using RugbyWatch.Data;
 using Match = RugbyWatch.Data.Match;
 
@@ -26,11 +29,11 @@ namespace RugbyWatch.Helpers {
             {
                 LeagueName = sections[1].Trim(),
                 GameRound = sections[2].Trim(),
-                Day = sections [ 3 ].Trim(),
+                Day = DateTime.ParseExact(sections [ 3 ].Trim(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
                 Time = sections [ 4 ].Trim(),
                 Field = sections [ 5 ].Trim(),
                 LocalTeamName = sections [ 6 ].Trim(),
-                VisitorTeamName = sections [ 7 ].Trim()
+                VisitorTeamName = sections [ 7 ].Trim(),
             };
 
 
@@ -59,7 +62,6 @@ namespace RugbyWatch.Helpers {
                 }
                 if (IsEndOfPlayers((playerRow)))
                     break;
-                Console.WriteLine($"{playerRow}");
                 string cleanPlayerName = "";
                 if(playerRow.Length > 8)
                     cleanPlayerName = playerRow.Substring(0, playerRow.Length - 8);

@@ -30,7 +30,7 @@ namespace RugbyWatch.Services {
                 return -1;
             }
 
-            return 200;
+            return currentId;
 
         }
 

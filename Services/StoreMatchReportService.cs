@@ -13,11 +13,13 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
     private readonly string? _regionalMatchReportErrorDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportErrorDirectory");
     private readonly string? _regionalMatchReportFilterDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportFilterDirectory");
 
-    public int Execute() {
-        int processedFilesCount = 0;
-        var regionalMatchReports = Directory.EnumerateFiles(_regionalMatchReportDirectoryPath!, "*.pdf");
+    public MatchReport Execute(int matchReportId) {
+        var regionalMatchReport = Directory
+            .EnumerateFiles(_regionalMatchReportDirectoryPath!, $"{matchReportId}.pdf")
+            .FirstOrDefault();
+        
 
-        foreach ( var regionalMatchReport in regionalMatchReports ) {
+        if ( regionalMatchReport != null) {
             try {
                 var formattedMatchReport = ExtractMatchReportFromFile(regionalMatchReport);
                 var fileName = Path.GetFileName(regionalMatchReport);
@@ -26,21 +28,24 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
                 {
                     var regionalMatchReportFilter = Path.Combine(_regionalMatchReportFilterDirectory!, fileName);
                     File.Move(regionalMatchReport, regionalMatchReportFilter, true);
-                    continue;
+                    Console.WriteLine($"{regionalMatchReport} discarded: Match league is {formattedMatchReport?.Match?.LeagueName}");
+                    return null;
                 }
                 SaveMatchReportToDatabase(formattedMatchReport);
-                processedFilesCount++;
                 var regionalMatchReportArchive = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
                 File.Move(regionalMatchReport, regionalMatchReportArchive, true);
+                Console.WriteLine($"{regionalMatchReport} successfully integrated!");
+                return formattedMatchReport;
             }
             catch ( Exception ex ) {
                 Console.WriteLine($"Error processing file {regionalMatchReport}: {ex.Message}");
                 var fileName = Path.GetFileName(regionalMatchReport);
                 var regionalMatchReportError = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
                 File.Move(regionalMatchReport, regionalMatchReportError, true);
+                return null;
             }
         }
-        return processedFilesCount;
+        return null;
     }
 
     private MatchReport ExtractMatchReportFromFile( string filePath ) {
@@ -59,7 +64,7 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
 
     private bool isMensRegionalLeague(MatchReport matchReport)
     {
-        if(matchReport.Match.LeagueName.StartsWith(" 3ª") || (matchReport.Match.LeagueName.StartsWith(" 2ª")) || (matchReport.Match.LeagueName.StartsWith(" 1ª")))
+        if(matchReport.Match.LeagueName.StartsWith("3ª") || (matchReport.Match.LeagueName.StartsWith("2ª")) || (matchReport.Match.LeagueName.StartsWith("1ª")))
             return true;
         return false;
     }
@@ -74,13 +79,12 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
             m.VisitorTeamId == data.Match.VisitorTeamId);
         if ( existingMatch == null ) {
             dbContext.Matches!.Add(data.Match);
+            InsertLineUp(data);
             dbContext.SaveChanges();
         }
         else {
             data.Match = existingMatch;
-            Console.WriteLine("This match already exists in the database.");
         }
-        InsertLineUp(data);
     }
 
 
@@ -93,7 +97,6 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
             return newTeam;
         }
         else {
-            Console.WriteLine("This team already exists in the database.");
             return existingTeam;
         }
     }

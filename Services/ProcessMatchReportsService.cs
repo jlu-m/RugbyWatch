@@ -2,12 +2,12 @@
 using RugbyWatch.Data;
 
 namespace RugbyWatch.Services {
-    public class ProcessMatchReportsService(RugbyMatchDbContext dbContext, DownloadMatchReportService downloadService, StoreMatchReportService storeService) {
+    public class ProcessMatchReportsService(RugbyMatchDbContext dbContext, DownloadMatchReportService downloadService, StoreMatchReportService storeService, LineupComplianceCheckService lineupComplianceCheckService) {
 
         private readonly RugbyMatchDbContext _context = dbContext;
         private readonly DownloadMatchReportService _downloadService = downloadService;
         private readonly StoreMatchReportService _storeService = storeService;
-
+        private readonly LineupComplianceCheckService _lineupComplianceCheckService = lineupComplianceCheckService;
 
         public async Task<int> Execute()
         {
@@ -15,7 +15,7 @@ namespace RugbyWatch.Services {
             int currentId = tracker.RegionalMatchReportId + 1;
             int consecutiveErrors = 0; 
             int successfulReports = 0;
-
+            MatchReport match = new MatchReport();
             while ( true )
             {
                     var response = await _downloadService.Execute(currentId);
@@ -29,7 +29,9 @@ namespace RugbyWatch.Services {
                         currentId++; 
                         continue; 
                     }
-                    _storeService.Execute();
+                    match = _storeService.Execute(response);
+                    if (match is { Match: not null })
+                        _lineupComplianceCheckService.Execute(match.Match);
                     consecutiveErrors = 0;
                     tracker.RegionalMatchReportId = currentId; 
                     currentId++;
@@ -37,8 +39,9 @@ namespace RugbyWatch.Services {
             }
 
             tracker.RegionalMatchReportId = currentId - 25;
-            _context.LastDownloadedMatchReports.Update(tracker);
+            _context.LastDownloadedMatchReports!.Update(tracker);
             await _context.SaveChangesAsync();
+
             return successfulReports;
         }
     }

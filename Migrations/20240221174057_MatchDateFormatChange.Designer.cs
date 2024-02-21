@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RugbyWatch.Data;
 
@@ -11,9 +12,11 @@ using RugbyWatch.Data;
 namespace RugbyWatch.Migrations
 {
     [DbContext(typeof(RugbyMatchDbContext))]
-    partial class RugbyMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240221174057_MatchDateFormatChange")]
+    partial class MatchDateFormatChange
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -108,8 +111,9 @@ namespace RugbyWatch.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("Day")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("Day")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Field")
                         .IsRequired()
@@ -125,9 +129,8 @@ namespace RugbyWatch.Migrations
                     b.Property<int>("LocalTeamId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Time")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("VisitorTeamId")
                         .HasColumnType("int");
