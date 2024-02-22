@@ -6,43 +6,37 @@ using RugbyWatch.Helpers;
 
 namespace RugbyWatch.Services;
 
-public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfiguration configuration)
-{
-    private readonly string? _regionalMatchReportDirectoryPath = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportDirectory");
-    private readonly string? _regionalMatchReportArchiveDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportArchiveDirectory");
-    private readonly string? _regionalMatchReportErrorDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportErrorDirectory");
-    private readonly string? _regionalMatchReportFilterDirectory = ConfigurationBinder.GetValue<string>(configuration, "RegionalMatchReportFilterDirectory");
+public class StoreMatchReportService( RugbyMatchDbContext dbContext, IConfiguration configuration, IMatchReportParser parser ) {
+    private readonly IMatchReportParser _parser = parser;
 
-    public MatchReport Execute(int matchReportId) {
-        var regionalMatchReport = Directory
-            .EnumerateFiles(_regionalMatchReportDirectoryPath!, $"{matchReportId}.pdf")
+    public MatchReport Execute( int matchReportId ) {
+        var matchReport = Directory
+            .EnumerateFiles(_parser.MatchReportDirectoryPath!, $"{matchReportId}.pdf")
             .FirstOrDefault();
-        
 
-        if ( regionalMatchReport != null) {
+        if ( matchReport != null ) {
             try {
-                var formattedMatchReport = ExtractMatchReportFromFile(regionalMatchReport);
+                var formattedMatchReport = ExtractMatchReportFromFile(matchReport);
                 formattedMatchReport.Match!.FileId = matchReportId;
-                var fileName = Path.GetFileName(regionalMatchReport);
+                var fileName = Path.GetFileName(matchReport);
 
-                if (!IsMensRegionalLeague(formattedMatchReport))
-                {
-                    var regionalMatchReportFilter = Path.Combine(_regionalMatchReportFilterDirectory!, fileName);
-                    File.Move(regionalMatchReport, regionalMatchReportFilter, true);
-                    Console.WriteLine($"{regionalMatchReport} discarded: Match league is {formattedMatchReport?.Match?.LeagueName}");
+                if ( !IsMensRegionalLeague(formattedMatchReport) ) {
+                    var regionalMatchReportFilter = Path.Combine(_parser.MatchReportFilterDirectory!, fileName);
+                    File.Move(matchReport, regionalMatchReportFilter, true);
+                    Console.WriteLine($"{matchReport} discarded: Match league is {formattedMatchReport?.Match?.LeagueName}");
                     return null!;
                 }
                 SaveMatchReportToDatabase(formattedMatchReport);
-                var regionalMatchReportArchive = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
-                File.Move(regionalMatchReport, regionalMatchReportArchive, true);
-                Console.WriteLine($"{regionalMatchReport} successfully integrated!");
+                var regionalMatchReportArchive = Path.Combine(_parser.MatchReportArchiveDirectory!, fileName);
+                File.Move(matchReport, regionalMatchReportArchive, true);
+                Console.WriteLine($"{matchReport} successfully integrated!");
                 return formattedMatchReport;
             }
             catch ( Exception ex ) {
-                Console.WriteLine($"Error processing file {regionalMatchReport}: {ex.Message}");
-                var fileName = Path.GetFileName(regionalMatchReport);
-                var regionalMatchReportError = Path.Combine(_regionalMatchReportErrorDirectory!, fileName);
-                File.Move(regionalMatchReport, regionalMatchReportError, true);
+                Console.WriteLine($"Error processing file {matchReport}: {ex.Message}");
+                var fileName = Path.GetFileName(matchReport);
+                var regionalMatchReportError = Path.Combine(_parser.MatchReportErrorDirectory!, fileName);
+                File.Move(matchReport, regionalMatchReportError, true);
                 return null!;
             }
         }
@@ -59,13 +53,11 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
             for ( int pageIndex = 0; pageIndex < pageCount; pageIndex++ )
                 extractedText.AppendLine(docReader.GetPageReader(pageIndex).GetText());
         }
-        var parser = new RegionalMatchReportParser();
-        return parser.ParseMatchReport(extractedText.ToString());
+        return _parser.ParseMatchReport(extractedText.ToString());
     }
 
-    private bool IsMensRegionalLeague(MatchReport matchReport)
-    {
-        if(matchReport.Match!.LeagueName.StartsWith("3ª") || (matchReport.Match.LeagueName.StartsWith("2ª")) || (matchReport.Match.LeagueName.StartsWith("1ª")))
+    private bool IsMensRegionalLeague( MatchReport matchReport ) {
+        if ( matchReport.Match!.LeagueName.StartsWith("3ª") || (matchReport.Match.LeagueName.StartsWith("2ª")) || (matchReport.Match.LeagueName.StartsWith("1ª")) )
             return true;
         return false;
     }
@@ -125,31 +117,26 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
 
         return existingPlayer;
     }
-    private void InsertLineUp(MatchReport data)
-    {
-        if (data.Match == null) return; // Early exit if there's no match data
+    private void InsertLineUp( MatchReport data ) {
+        if ( data.Match == null ) return; // Early exit if there's no match data
 
         InsertPlayersIntoLineup(data, data.LocalPlayers, data.Match.LocalTeamId);
         InsertPlayersIntoLineup(data, data.VisitorPlayers, data.Match.VisitorTeamId);
     }
 
-    private void InsertPlayersIntoLineup(MatchReport data, List<Player>? players, int teamId)
-    {
-        foreach (var player in players!)
-        {
+    private void InsertPlayersIntoLineup( MatchReport data, List<Player>? players, int teamId ) {
+        foreach ( var player in players! ) {
             var playerEntity = GetOrCreatePlayer(player);
             var playerId = playerEntity.Id;
 
-            bool existingLineup = dbContext.Lineups!.Any(l => 
-                data.Match != null && 
-                l.MatchId == data.Match.Id && 
-                l.PlayerId == playerId && 
+            bool existingLineup = dbContext.Lineups!.Any(l =>
+                data.Match != null &&
+                l.MatchId == data.Match.Id &&
+                l.PlayerId == playerId &&
                 l.TeamId == teamId);
 
-            if (!existingLineup)
-            {
-                var lineup = new Lineup
-                {
+            if ( !existingLineup ) {
+                var lineup = new Lineup {
                     MatchId = data.Match!.Id,
                     PlayerId = playerId,
                     TeamId = teamId

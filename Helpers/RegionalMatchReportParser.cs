@@ -1,20 +1,29 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.SqlServer.Server;
 using RugbyWatch.Data;
 using Match = RugbyWatch.Data.Match;
 
 namespace RugbyWatch.Helpers {
-    public class RegionalMatchReportParser
+    public class RegionalMatchReportParser :IMatchReportParser
     {
-        private readonly string[] MatchReportSectionSeparators =
-            new string[] { "Alineaciones", "Resultado del partido", "Cambios" };
-        private readonly string[] MatchSectionSeparators = new string[] { "Celebrado en:", "Categoría:", "Jornada:", "El día:", "A la hora:", "En el campo:", "Equipo local:", "Equipo visitante:", "FEDERACIÓN DE RUGBY DE MADRID" };
+        private readonly string[] _matchReportSectionSeparators =
+            { "Alineaciones", "Resultado del partido", "Cambios" };
+        private readonly string[] _matchSectionSeparators = { "Celebrado en:", "Categoría:", "Jornada:", "El día:", "A la hora:", "En el campo:", "Equipo local:", "Equipo visitante:", "FEDERACIÓN DE RUGBY DE MADRID" };
+        public string MatchReportDirectoryPath { get; }
+        public string MatchReportArchiveDirectory { get; }
+        public string MatchReportErrorDirectory { get; }
+        public string MatchReportFilterDirectory { get; }
+        public RegionalMatchReportParser(IConfiguration configuration)
+        {
+            MatchReportDirectoryPath = configuration.GetValue<string>("RegionalMatchReportDirectory")!;
+            MatchReportArchiveDirectory = configuration.GetValue<string>("RegionalMatchReportArchiveDirectory")!;
+            MatchReportErrorDirectory = configuration.GetValue<string>("RegionalMatchReportErrorDirectory")!;
+            MatchReportFilterDirectory = configuration.GetValue<string>("RegionalMatchReportFilterDirectory")!;
+        }
         public MatchReport ParseMatchReport(string extractedText)
         {
             var matchReport = new MatchReport();
-            string[] sections = extractedText.Split(MatchReportSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
+            string[] sections = extractedText.Split(_matchReportSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
             matchReport.Match =  ParseMatchSection(sections[0]);
             matchReport.LocalPlayers = ParsePlayers(sections[1])[0];
             matchReport.VisitorPlayers = ParsePlayers(sections[1])[1];
@@ -24,8 +33,8 @@ namespace RugbyWatch.Helpers {
         private Match ParseMatchSection(string sectionText)
         {
             string cleanedString = sectionText.Replace("\r", "").Replace("\n", "");
-            string[] sections = cleanedString.Split(MatchSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
-            Match match = new Match()
+            string[] sections = cleanedString.Split(_matchSectionSeparators, StringSplitOptions.RemoveEmptyEntries);
+            Match match = new Match
             {
                 LeagueName = sections[1].Trim(),
                 GameRound = sections[2].Trim(),
@@ -48,9 +57,9 @@ namespace RugbyWatch.Helpers {
             List<Player> localPlayers = new List<Player>();
             List<Player> visitorPlayers = new List<Player>();
 
-            string[] sections = extractedText.Split(new string[] { "Dorsal *" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] sections = extractedText.Split(new[] { "Dorsal *" }, StringSplitOptions.RemoveEmptyEntries);
             var playersAsText = sections
-                .SelectMany(section => section.Split(new string[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
+                .SelectMany(section => section.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
                 .ToList();
             bool isLocal = true;
             foreach(var playerRow in playersAsText)
@@ -71,9 +80,9 @@ namespace RugbyWatch.Helpers {
                 if (cleanPlayerName.StartsWith(" C/X "))
                     cleanPlayerName = cleanPlayerName.Substring(4);
                 if(isLocal)
-                    localPlayers.Add(new Player(){FullName = cleanPlayerName.Trim()});
+                    localPlayers.Add(new Player {FullName = cleanPlayerName.Trim()});
                 else
-                    visitorPlayers.Add(new Player(){FullName = cleanPlayerName.Trim() });
+                    visitorPlayers.Add(new Player {FullName = cleanPlayerName.Trim() });
             }
             totalPlayers.Add(localPlayers);
             totalPlayers.Add(visitorPlayers);

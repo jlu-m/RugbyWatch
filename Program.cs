@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RugbyWatch.Components;
 using RugbyWatch.Data;
+using RugbyWatch.Helpers;
 using RugbyWatch.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,10 @@ builder.Services.AddScoped<DownloadMatchReportService>();
 builder.Services.AddScoped<ProcessMatchReportsService>();
 builder.Services.AddScoped<GetSuspiciousMatchesService>();
 builder.Services.AddScoped<GetMatchInformationService>();
+builder.Services.AddScoped<IMatchReportParser, RegionalMatchReportParser>();
+builder.Services.AddScoped<IMatchReportParser, NationalMatchReportParser>();
+builder.Services.AddScoped<RegionalMatchReportParser>();
+builder.Services.AddScoped<NationalMatchReportParser>();
 
 builder.Services.AddDbContext<RugbyMatchDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RugbyWatchDb")));
