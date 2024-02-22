@@ -14,6 +14,8 @@ builder.Services.AddScoped<StoreMatchReportService>();
 builder.Services.AddScoped<LineupComplianceCheckService>();
 builder.Services.AddScoped<DownloadMatchReportService>();
 builder.Services.AddScoped<ProcessMatchReportsService>();
+builder.Services.AddScoped<GetSuspiciousMatchesService>();
+builder.Services.AddScoped<GetMatchInformationService>();
 
 builder.Services.AddDbContext<RugbyMatchDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RugbyWatchDb")));

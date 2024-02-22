@@ -91,7 +91,8 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
     private Team GetOrCreateTeam( string teamName ) {
         var existingTeam = dbContext.Teams!.FirstOrDefault(t => t.Name == teamName);
         if ( existingTeam == null ) {
-            var newTeam = new Team { Name = teamName };
+            var club = dbContext.Clubs!.FirstOrDefault(c => teamName.StartsWith(c.Name.Substring(0, 10)));
+            var newTeam = new Team { Name = teamName, ClubId = club?.Id };
             dbContext.Teams!.Add(newTeam);
             dbContext.SaveChanges();
             return newTeam;

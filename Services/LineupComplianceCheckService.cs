@@ -4,16 +4,42 @@ namespace RugbyWatch.Services {
     public class LineupComplianceCheckService( RugbyMatchDbContext dbContext ) {
 
         public void Execute( Match match ) {
-            var teamsFromSameClub = GetTeamsFromSameClub(match.LocalTeamId);
-            var matchesFromSuperiorLeagues = GetLastMatchesFromSuperiorLeagues(match, teamsFromSameClub);
-            var commonPlayers = GetCommonPlayers(match, matchesFromSuperiorLeagues);
+            if (match.FileId == 11207)
+            {
+                Console.WriteLine("Match 11207");
+            }
+            var localTeamsFromSameClub = GetTeamsFromSameClub(match.LocalTeamId);
+            var localMatchesFromSuperiorLeagues = GetLastMatchesFromSuperiorLeagues(match, localTeamsFromSameClub);
+            var localCommonPlayers = GetCommonPlayers(match, localMatchesFromSuperiorLeagues);
+            StoreSuspiciousMatch(match, localCommonPlayers, localMatchesFromSuperiorLeagues);
+            var visitorTeamsFromSameClub = GetTeamsFromSameClub(match.VisitorTeamId);
+            var visitorMatchesFromSuperiorLeagues = GetLastMatchesFromSuperiorLeagues(match, visitorTeamsFromSameClub);
+            var visitorCommonPlayers = GetCommonPlayers(match, visitorMatchesFromSuperiorLeagues);
+            StoreSuspiciousMatch(match, visitorCommonPlayers, visitorMatchesFromSuperiorLeagues);
+        }
+
+        private void StoreSuspiciousMatch(Match match, List<Player> commonPlayers, List<int> matchesFromSuperiorLeagues)
+        {
+            if (commonPlayers.Count > 3)
+            {
+                var suspiciousMatch = new SuspiciousMatch
+                {
+                    MatchId = match.Id,
+                    Match = match,
+                    IllegalPlayers = string.Join("; ", commonPlayers.Select(p => p.FullName)),
+                    MainMatchFileId = match.FileId,
+                    PreviousMatchesFileId = dbContext.Matches!.Where(m => matchesFromSuperiorLeagues.Contains(m.Id)).Select(m => m.FileId).ToList()
+                };
+                dbContext.SuspiciousMatches!.Add(suspiciousMatch);
+                dbContext.SaveChanges();
+            }
         }
 
 
         private List<int> GetTeamsFromSameClub( int localTeamId ) {
             var currentTeam = dbContext.Teams!.FirstOrDefault(t => t.Id == localTeamId);
-            if ( currentTeam == null ) return new List<int>();
-
+            if ( currentTeam == null ||  currentTeam.ClubId == null) return new List<int>();
+            
             var teamsFromSameClub = dbContext.Teams!
                 .Where(t => t.ClubId == currentTeam.ClubId && t.Id != localTeamId)
                 .Select(t => t.Id)
@@ -46,11 +72,6 @@ namespace RugbyWatch.Services {
                 .Where(p => players
                     .Intersect(playersFromSuperiorLeagues)
                     .Contains(p.Id)).ToList();
-            var commonPlayersNames = commonPlayers.Select(p => p.FullName).ToList();
-
-            string filePath = @"PDFRepository\\Regional\\Alert.txt";
-            List<string> contentToWrite = new List<string>() { $"On match {match.FileId}: {commonPlayersNames}" };
-            File.AppendAllLines(filePath, contentToWrite);
             return commonPlayers;
         }
 

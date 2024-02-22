@@ -1,30 +1,78 @@
 ﻿@page "/"
 @using RugbyWatch.Services
+@using RugbyWatch.Data
 @rendermode InteractiveServer
 
 @inject ProcessMatchReportsService ProcessMatchReportsService
+@inject GetSuspiciousMatchesService GetSuspiciousMatchesService
+@inject GetMatchInformationService GetMatchInformationService
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hola Palomita! te quiero muuuucho!</h1>
+<h3>Suspicious Matches</h3>
 
-<button class="btn btn-primary"  @onclick="StartProcess">Process PDF Files</button>
+<button class="btn btn-primary" @onclick="StartProcess">Process PDF Files</button>
 
-@if(_processedCount.HasValue)
-{
+@if ( _processedCount.HasValue ) {
     <p>Number of Match Reports successfully processed: @_processedCount</p>
+}
+
+@if ( _suspiciousMatches == null ) {
+    <p><em>Loading suspicious matches...</em></p>
+}
+else if ( _suspiciousMatches.Count > 0 ) {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Match Information</th>
+                <th>Illegal Players</th>
+                <th>Match Report</th>
+                <th>Previous Matches</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ( var match in _suspiciousMatches ) {
+                <tr>
+                    <td>@match.Match.LocalTeam!.Name - @match.Match.VisitorTeam!.Name, @match.Match.Day.ToString("dd/MM/yyyy") @match.Match.Time</td>
+                    <td>@match.IllegalPlayers</td>
+                    <td><a href=@($"https://rugbymadrid.matchready.es/es/public/competition/match_pdf/{match.MainMatchFileId}/act/") target="_blank">View Report</a></td>
+                    <td>
+                        @for ( int i = 0; i < match.PreviousMatchesFileId.Count; i++ ) {
+                            var fileId = match.PreviousMatchesFileId [ i ];
+                            <a href=@($"https://rugbymadrid.matchready.es/es/public/competition/match_pdf/{fileId}/act/") target="_blank">
+                                Match Report @{
+                                    var i1 = i + 1;
+                                }
+                            </a>
+
+                            <br>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
     private int? _processedCount = null;
+    private List<SuspiciousMatch> _suspiciousMatches = null!;
 
-    private async Task StartProcess() {
-        Console.WriteLine("Processing regional match reports..."); 
-        _processedCount = await ProcessMatchReportsService.Execute();
-        StateHasChanged(); 
+    protected override async Task OnInitializedAsync() {
+        _suspiciousMatches = await GetSuspiciousMatchesService.Execute();
+
+        foreach ( var match in _suspiciousMatches ) {
+            match.Match = await GetMatchInformationService.Execute(match.MatchId);
+        }
     }
 
+    private async Task StartProcess() {
+        Console.WriteLine("Processing regional match reports...");
+        _processedCount = await ProcessMatchReportsService.Execute();
+        _suspiciousMatches = await GetSuspiciousMatchesService.Execute();
+        foreach ( var match in _suspiciousMatches ) {
+            match.Match = await GetMatchInformationService.Execute(match.MatchId);
+        }
+        StateHasChanged();
+    }
 }
-
-
-
