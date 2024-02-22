@@ -22,14 +22,15 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
         if ( regionalMatchReport != null) {
             try {
                 var formattedMatchReport = ExtractMatchReportFromFile(regionalMatchReport);
+                formattedMatchReport.Match!.FileId = matchReportId;
                 var fileName = Path.GetFileName(regionalMatchReport);
 
-                if (!isMensRegionalLeague(formattedMatchReport))
+                if (!IsMensRegionalLeague(formattedMatchReport))
                 {
                     var regionalMatchReportFilter = Path.Combine(_regionalMatchReportFilterDirectory!, fileName);
                     File.Move(regionalMatchReport, regionalMatchReportFilter, true);
                     Console.WriteLine($"{regionalMatchReport} discarded: Match league is {formattedMatchReport?.Match?.LeagueName}");
-                    return null;
+                    return null!;
                 }
                 SaveMatchReportToDatabase(formattedMatchReport);
                 var regionalMatchReportArchive = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
@@ -40,12 +41,12 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
             catch ( Exception ex ) {
                 Console.WriteLine($"Error processing file {regionalMatchReport}: {ex.Message}");
                 var fileName = Path.GetFileName(regionalMatchReport);
-                var regionalMatchReportError = Path.Combine(_regionalMatchReportArchiveDirectory!, fileName);
+                var regionalMatchReportError = Path.Combine(_regionalMatchReportErrorDirectory!, fileName);
                 File.Move(regionalMatchReport, regionalMatchReportError, true);
-                return null;
+                return null!;
             }
         }
-        return null;
+        return null!;
     }
 
     private MatchReport ExtractMatchReportFromFile( string filePath ) {
@@ -62,9 +63,9 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
         return parser.ParseMatchReport(extractedText.ToString());
     }
 
-    private bool isMensRegionalLeague(MatchReport matchReport)
+    private bool IsMensRegionalLeague(MatchReport matchReport)
     {
-        if(matchReport.Match.LeagueName.StartsWith("3ª") || (matchReport.Match.LeagueName.StartsWith("2ª")) || (matchReport.Match.LeagueName.StartsWith("1ª")))
+        if(matchReport.Match!.LeagueName.StartsWith("3ª") || (matchReport.Match.LeagueName.StartsWith("2ª")) || (matchReport.Match.LeagueName.StartsWith("1ª")))
             return true;
         return false;
     }
@@ -74,11 +75,10 @@ public class StoreMatchReportService(RugbyMatchDbContext dbContext, IConfigurati
         data.Match.LocalTeamId = GetOrCreateTeam(data.Match.LocalTeamName).Id;
         data.Match.VisitorTeamId = GetOrCreateTeam(data.Match.VisitorTeamName).Id;
         var existingMatch = dbContext.Matches!.FirstOrDefault(m =>
-            m.GameRound == data.Match.GameRound &&
-            m.LocalTeamId == data.Match.LocalTeamId &&
-            m.VisitorTeamId == data.Match.VisitorTeamId);
+            m.FileId == data.Match.FileId);
         if ( existingMatch == null ) {
             dbContext.Matches!.Add(data.Match);
+            dbContext.SaveChanges();
             InsertLineUp(data);
             dbContext.SaveChanges();
         }

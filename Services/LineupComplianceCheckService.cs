@@ -6,15 +6,15 @@ namespace RugbyWatch.Services {
         public void Execute( Match match ) {
             var teamsFromSameClub = GetTeamsFromSameClub(match.LocalTeamId);
             var matchesFromSuperiorLeagues = GetLastMatchesFromSuperiorLeagues(match, teamsFromSameClub);
-            var commonPlayers = GetCommonPlayers(match.Id, matchesFromSuperiorLeagues);
+            var commonPlayers = GetCommonPlayers(match, matchesFromSuperiorLeagues);
         }
 
 
         private List<int> GetTeamsFromSameClub( int localTeamId ) {
-            var currentTeam = dbContext.Teams.FirstOrDefault(t => t.Id == localTeamId);
+            var currentTeam = dbContext.Teams!.FirstOrDefault(t => t.Id == localTeamId);
             if ( currentTeam == null ) return new List<int>();
 
-            var teamsFromSameClub = dbContext.Teams
+            var teamsFromSameClub = dbContext.Teams!
                 .Where(t => t.ClubId == currentTeam.ClubId && t.Id != localTeamId)
                 .Select(t => t.Id)
                 .ToList();
@@ -23,7 +23,7 @@ namespace RugbyWatch.Services {
         }
 
         private List<int> GetLastMatchesFromSuperiorLeagues( Match match, List<int> teams ) {
-            return dbContext.Matches.Where(m =>
+            return dbContext.Matches!.Where(m =>
                 m.Day > match.Day.AddDays(-9)
                 && m.Day < match.Day
                 && GetSuperiorLeagues(match.LeagueId)
@@ -33,31 +33,29 @@ namespace RugbyWatch.Services {
                 .ToList();
         }
 
-        private List<string> GetCommonPlayers( int matchId, List<int> matchIdsFromSuperiorLeagues ) {
-            var players = dbContext.Lineups
-                .Where(l => l.MatchId == matchId)
+        private List<Player> GetCommonPlayers( Match match, List<int> matchIdsFromSuperiorLeagues ) {
+            var players = dbContext.Lineups!
+                .Where(l => l.MatchId == match.Id)
                 .Select(l => l.PlayerId).ToList();
 
-            var playersFromSuperiorLeagues = dbContext.Lineups
+            var playersFromSuperiorLeagues = dbContext.Lineups!
                 .Where(l => matchIdsFromSuperiorLeagues.Contains(l.MatchId))
                 .Select(l => l.PlayerId).ToList();
 
-            var commonPlayers = dbContext.Players
+            var commonPlayers = dbContext.Players!
                 .Where(p => players
                     .Intersect(playersFromSuperiorLeagues)
-                    .Contains(p.Id))
-                .Select(p => p.FullName)
-                .ToList();
+                    .Contains(p.Id)).ToList();
+            var commonPlayersNames = commonPlayers.Select(p => p.FullName).ToList();
 
             string filePath = @"PDFRepository\\Regional\\Alert.txt";
-            string contentToWrite = $"On match {matchId}: {commonPlayers}";
-            File.AppendAllText(filePath, contentToWrite);
-
+            List<string> contentToWrite = new List<string>() { $"On match {match.FileId}: {commonPlayersNames}" };
+            File.AppendAllLines(filePath, contentToWrite);
             return commonPlayers;
         }
 
         private List<int> GetSuperiorLeagues( int leagueId ) {
-            var league = dbContext.Leagues.FirstOrDefault(l => l.Id == leagueId).Name;
+            var league = dbContext.Leagues!.FirstOrDefault(l => l.Id == leagueId)!.Name;
             List<string> superiorLeagues = new List<string>();
             switch ( league ) {
                 case "1ª Regional":
@@ -95,7 +93,7 @@ namespace RugbyWatch.Services {
                 default:
                     return new List<int>();
             }
-            var superiorLeaguesIds = dbContext.Leagues.Where(l => superiorLeagues.Contains(l.Name)).Select(l => l.Id).ToList();
+            var superiorLeaguesIds = dbContext.Leagues!.Where(l => superiorLeagues.Contains(l.Name)).Select(l => l.Id).ToList();
             return superiorLeaguesIds ;
         }
     }

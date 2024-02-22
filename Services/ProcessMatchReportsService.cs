@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client.Extensions.Msal;
 using RugbyWatch.Data;
+using System.Diagnostics;
 
 namespace RugbyWatch.Services {
     public class ProcessMatchReportsService(RugbyMatchDbContext dbContext, DownloadMatchReportService downloadService, StoreMatchReportService storeService, LineupComplianceCheckService lineupComplianceCheckService) {
@@ -13,9 +15,8 @@ namespace RugbyWatch.Services {
         {
             var tracker = await _context.LastDownloadedMatchReports!.FirstOrDefaultAsync() ?? new LastDownloadedMatchReport() { RegionalMatchReportId = 0 };
             int currentId = tracker.RegionalMatchReportId + 1;
-            int consecutiveErrors = 0; 
+            int consecutiveErrors = 0;
             int successfulReports = 0;
-            MatchReport match = new MatchReport();
             while ( true )
             {
                     var response = await _downloadService.Execute(currentId);
@@ -29,7 +30,8 @@ namespace RugbyWatch.Services {
                         currentId++; 
                         continue; 
                     }
-                    match = _storeService.Execute(response);
+                    var match = _storeService.Execute(response);
+
                     if (match is { Match: not null })
                         _lineupComplianceCheckService.Execute(match.Match);
                     consecutiveErrors = 0;
@@ -37,11 +39,9 @@ namespace RugbyWatch.Services {
                     currentId++;
                     successfulReports++;
             }
-
             tracker.RegionalMatchReportId = currentId - 25;
             _context.LastDownloadedMatchReports!.Update(tracker);
             await _context.SaveChangesAsync();
-
             return successfulReports;
         }
     }

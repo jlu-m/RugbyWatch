@@ -33,5 +33,6 @@ namespace RugbyWatch.Data {
         public int VisitorTeamId { get; set; }
         public Team? VisitorTeam { get; set; }
 
+        public int? FileId { get; set; }
     }
 }
