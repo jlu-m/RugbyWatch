@@ -1,0 +1,15 @@
+﻿@page "/rules"
+@rendermode InteractiveServer
+
+<PageTitle>Rules</PageTitle>
+
+
+
+
+<iframe src="@_pdfUrl" width="100%" height="500px">
+    If you're seeing this message, it means your browser doesn't support iframes.
+</iframe>
+
+@code {
+    private readonly string _pdfUrl = "https://rugbymadrid.matchready.es/uploads/documentation/files/upload-65129a1413564-documentation_file.pdf";
+}

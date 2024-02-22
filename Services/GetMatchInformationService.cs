@@ -15,10 +15,10 @@ namespace RugbyWatch.Services
 
         public async Task<Match> Execute(int matchId)
         {
-            return await _context.Matches
+            return (await _context.Matches!
                 .Include(m => m.LocalTeam)
                 .Include(m => m.VisitorTeam)
-                .FirstOrDefaultAsync(m => m.Id == matchId);
+                .FirstOrDefaultAsync(m => m.Id == matchId))!;
         }
     }
 }

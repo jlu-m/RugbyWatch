@@ -37,7 +37,7 @@ else if ( _suspiciousMatches.Count > 0 ) {
                     <td>@match.IllegalPlayers</td>
                     <td><a href=@($"https://rugbymadrid.matchready.es/es/public/competition/match_pdf/{match.MainMatchFileId}/act/") target="_blank">View Report</a></td>
                     <td>
-                        @for ( int i = 0; i < match.PreviousMatchesFileId.Count; i++ ) {
+                        @for ( int i = 0; i < match.PreviousMatchesFileId!.Count; i++ ) {
                             var fileId = match.PreviousMatchesFileId [ i ];
                             <a href=@($"https://rugbymadrid.matchready.es/es/public/competition/match_pdf/{fileId}/act/") target="_blank">
                                 Match Report @{
